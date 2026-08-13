@@ -1,5 +1,5 @@
 [project]
-name = "demon-cry-dns"
+name = "dc-dns"
 version = "0.1.0"
 description = "DNS lookup module for demon-cry"
 authors = [
