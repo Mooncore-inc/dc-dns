@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.entry-points."demon_cry.modules"]
-dns_lookup = "demon_cry_dns:DnsLookup"
+dns_lookup = "dc_dns:DnsLookup"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
