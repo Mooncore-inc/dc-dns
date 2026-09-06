@@ -130,14 +130,14 @@ pycparser = {version = "*", markers = "implementation_name != \"PyPy\""}
 
 [[package]]
 name = "demon-cry-base"
-version = "0.1.0"
+version = "0.2.1"
 description = "Base module for demon-cry OSINT plugins"
 optional = false
 python-versions = ">=3.12"
 groups = ["main"]
 files = [
-    {file = "demon_cry_base-0.1.0-py3-none-any.whl", hash = "sha256:c6fb714159c6c1f2d94d2c15162bdf18a563435df0817f49cebf66b1bb47adb4"},
-    {file = "demon_cry_base-0.1.0.tar.gz", hash = "sha256:a1e8cb6dc06e86c5b71897ea6857a56726764e1b1eae6c2156ceff9d44340e38"},
+    {file = "demon_cry_base-0.2.1-py3-none-any.whl", hash = "sha256:b57b2defa436e15c0fc440d5cb832bb82e15f830c584fb26a9b13bbfb78d6e2f"},
+    {file = "demon_cry_base-0.2.1.tar.gz", hash = "sha256:87d88e09f74bdb6301aa70018d6541f726ffa61f2eaa77568935bf089d6d0eb9"},
 ]
 
 [[package]]
@@ -260,4 +260,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "b5eadddaa46cf325484eab0eaff6ebf7a549b69384e41a40188025071b18719b"
+content-hash = "5bbab5cc79049a729a80a7c94f675563439f749a17bfbe052229e44953850d51"

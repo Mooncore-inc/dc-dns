@@ -1,6 +1,6 @@
 import asyncio
 import aiodns
-from demon_cry_base import BaseModule
+from demon_cry_base import BaseModule, ModuleConfig
 
 NAME_SERVERS = [
     "1.1.1.1",
@@ -42,7 +42,7 @@ class DnsLookup(BaseModule):
         "required": ["domain"]
     }
 
-    async def execute(self, config: dict, domain: str, record_type: list[str] | None = None) -> dict:
+    async def execute(self, config: ModuleConfig, domain: str, record_type: list[str] | None = None) -> dict:
         resolver = aiodns.DNSResolver(nameservers=NAME_SERVERS)
         types = [t.upper() for t in (record_type or ["A"])]
 
