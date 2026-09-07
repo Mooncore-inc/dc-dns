@@ -1,6 +1,8 @@
 import asyncio
 import aiodns
-from demon_cry_base import BaseModule, ModuleConfig
+from typing import Literal
+from pydantic import Field
+from demon_cry_base import BaseModule, ModuleConfig, ModuleParameters
 
 NAME_SERVERS = [
     "1.1.1.1",
@@ -21,34 +23,27 @@ RECORD_FIELDS = {
     "PTR": ["dname"],
 }
 
+class DnsLookupParams(ModuleParameters):
+    domain: str = Field(description="Domain to lookup")
+    record_type: list[Literal[tuple(RECORD_FIELDS.keys())]] = Field(
+        default=["A"],
+        description='Record types to query (e.g. ["A", "MX", "NS"])'
+    )
+
+
 class DnsLookup(BaseModule):
     name = "dns_lookup"
     description = "finds DNS records"
     category = "network"
-    parameters = {
-        "type": "object",
-        "properties": {
-            "domain": {"type": "string", "description": "Domain to lookup"},
-            "record_type": {
-                "type": "array",
-                "items": {
-                    "type": "string",
-                    "enum": list(RECORD_FIELDS.keys())
-                },
-                "default": ["A"],
-                "description": "Record types to query (e.g. [\"A\", \"MX\", \"NS\"])"
-            }
-        },
-        "required": ["domain"]
-    }
+    parameters_model = DnsLookupParams
 
-    async def execute(self, config: ModuleConfig, domain: str, record_type: list[str] | None = None) -> dict:
+    async def execute(self, config: ModuleConfig, params: DnsLookupParams) -> dict:
         resolver = aiodns.DNSResolver(nameservers=NAME_SERVERS)
-        types = [t.upper() for t in (record_type or ["A"])]
+        types = [t.upper() for t in params.record_type]
 
         async def query_one(qtype: str):
             try:
-                result = await resolver.query_dns(host=domain, qtype=qtype)
+                result = await resolver.query_dns(host=params.domain, qtype=qtype)
                 return (qtype, result.answer if result.answer else None)
             except Exception:
                 return (qtype, None)
