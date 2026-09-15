@@ -1,16 +1,11 @@
 import asyncio
-import aiodns
 from typing import Literal
-from pydantic import Field
-from demon_cry_base import BaseModule, ModuleConfig, ModuleParameters
 
-NAME_SERVERS = [
-    "1.1.1.1",
-    "8.8.8.8",
-    "9.9.9.9",
-    "77.88.8.8",
-    "208.67.220.220"
-]
+import aiodns
+from demon_cry_base import BasePlugin, PluginConfig, PluginParameters
+from pydantic import Field
+
+NAME_SERVERS = ["1.1.1.1", "8.8.8.8", "9.9.9.9", "77.88.8.8", "208.67.220.220"]
 
 RECORD_FIELDS = {
     "A": ["addr"],
@@ -23,21 +18,26 @@ RECORD_FIELDS = {
     "PTR": ["dname"],
 }
 
-class DnsLookupParams(ModuleParameters):
+
+RecordType = Literal["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA", "PTR"]
+
+
+class DnsLookupParams(PluginParameters):
     domain: str = Field(description="Domain to lookup")
-    record_type: list[Literal[tuple(RECORD_FIELDS.keys())]] = Field(
-        default=["A"],
-        description='Record types to query (e.g. ["A", "MX", "NS"])'
+    record_type: list[RecordType] = Field(
+        default=["A"], description='Record types to query (e.g. ["A", "MX", "NS"])'
     )
 
 
-class DnsLookup(BaseModule):
+class DnsLookup(BasePlugin):
     name = "dns_lookup"
     description = "finds DNS records"
     category = "network"
     parameters_model = DnsLookupParams
 
-    async def execute(self, config: ModuleConfig, params: DnsLookupParams) -> dict:
+    async def execute(self, config: PluginConfig, params: PluginParameters) -> dict:
+        if not isinstance(params, DnsLookupParams):
+            params = DnsLookupParams.model_validate(params.model_dump())
         resolver = aiodns.DNSResolver(nameservers=NAME_SERVERS)
         types = [t.upper() for t in params.record_type]
 
@@ -60,6 +60,6 @@ class DnsLookup(BaseModule):
             else:
                 lines.append(f"| {qtype} | No records |")
 
-        table = f"| Type | Value |\n|---|---|\n" + "\n".join(lines)
+        table = "| Type | Value |\n|---|---|\n" + "\n".join(lines)
 
         return {"result": table}

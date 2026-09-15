@@ -1,7 +1,7 @@
 [project]
 name = "dc-dns"
 version = "0.1.0"
-description = "DNS lookup module for demon-cry"
+description = "DNS lookup plugin for demon-cry"
 authors = [
     {name = "mooncore-inc"}
 ]
@@ -9,11 +9,11 @@ license = "Apache2"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "demon-cry-base (>=0.3.0,<0.4.0)",
+    "demon-cry-base==0.4.0",
     "aiodns>=4.0.4,<5.0.0"
 ]
 
-[project.entry-points."demon_cry.modules"]
+[project.entry-points."demon_cry.plugins"]
 dns_lookup = "dc_dns:DnsLookup"
 
 [build-system]
