@@ -14,10 +14,14 @@ class DnsLookupParams(PluginParameters):
 
 
 class DnsLookupConfig(PluginConfig):
-    dns_servers: list[str] = [
-        "1.1.1.1",
-        "8.8.8.8",
-        "9.9.9.9",
-        "77.88.8.8",
-        "208.67.220.220",
-    ]
+    dns_servers: list[str] = Field(
+        default=[
+            "1.1.1.1",
+            "8.8.8.8",
+            "9.9.9.9",
+            "77.88.8.8",
+            "208.67.220.220",
+        ],
+        description="DNS servers to query",
+    )
+    timeout: float = Field(default=5.0, description="DNS query timeout in seconds")

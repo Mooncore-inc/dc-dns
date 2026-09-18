@@ -1,22 +1,11 @@
 import asyncio
-from typing import Any
 
-import aiodns
+import dns.asyncresolver
+import dns.exception
 
 from demon_cry_base.runner import BaseEntity, PluginResult
 
-from dc_dns.models import DnsLookupParams, DnsLookupConfig
-
-RECORD_FIELDS = {
-    "A": ["addr"],
-    "AAAA": ["addr"],
-    "MX": ["priority", "exchange"],
-    "NS": ["nsdname"],
-    "TXT": ["data"],
-    "CNAME": ["cname"],
-    "SOA": ["mname", "rname", "serial", "refresh", "retry", "expire", "minimum"],
-    "PTR": ["dname"],
-}
+from dc_dns.models import DnsLookupConfig, DnsLookupParams
 
 
 class DnsLookupEntity(BaseEntity):
@@ -24,34 +13,27 @@ class DnsLookupEntity(BaseEntity):
     value: str
 
 
-def _format_record(qtype: str, record: Any) -> DnsLookupEntity | None:
-    values = []
-    for field in RECORD_FIELDS.get(qtype, []):
-        value = str(getattr(record.data, field, "")).strip()
-        if value:
-            values.append(value)
-    if not values:
-        return None
-    return DnsLookupEntity(qtype=qtype, value=", ".join(values))
+def _make_resolver(config: DnsLookupConfig) -> dns.asyncresolver.Resolver:
+    resolver = dns.asyncresolver.Resolver(configure=False)
+    resolver.nameservers = config.dns_servers
+    resolver.timeout = config.timeout
+    resolver.lifetime = config.timeout
+    return resolver
 
 
 async def _query(
-    resolver: aiodns.DNSResolver, domain: str, qtype: str
+    resolver: dns.asyncresolver.Resolver, domain: str, qtype: str
 ) -> list[DnsLookupEntity]:
     try:
-        result = await resolver.query_dns(host=domain, qtype=qtype)
-    except Exception:
+        answer = await resolver.resolve(domain, qtype)
+    except dns.exception.DNSException:
         return []
-    return [
-        entity
-        for rec in (result.answer or [])
-        if (entity := _format_record(qtype, rec)) is not None
-    ]
+    return [DnsLookupEntity(qtype=qtype, value=r.to_text()) for r in answer]
 
 
 async def run(config: DnsLookupConfig, params: DnsLookupParams) -> PluginResult:
     domain = params.domain.strip().lower().rstrip(".")
-    resolver = aiodns.DNSResolver(nameservers=config.dns_servers)
+    resolver = _make_resolver(config)
     results = await asyncio.gather(
         *(_query(resolver, domain, qtype) for qtype in params.record_type)
     )
