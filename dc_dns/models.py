@@ -1,5 +1,5 @@
 from typing import Literal
-from demon_cry_base.plugin import PluginParameters
+from demon_cry_base.plugin import PluginParameters, PluginConfig
 from pydantic import Field
 
 
@@ -11,3 +11,13 @@ class DnsLookupParams(PluginParameters):
     record_type: list[RecordType] = Field(
         default=["A"], description='Record types to query (e.g. ["A", "MX", "NS"])'
     )
+
+
+class DnsLookupConfig(PluginConfig):
+    dns_servers: list[str] = [
+        "1.1.1.1",
+        "8.8.8.8",
+        "9.9.9.9",
+        "77.88.8.8",
+        "208.67.220.220",
+    ]
