@@ -15,7 +15,7 @@ RECORD_FIELDS = {
     "PTR": ["dname"],
 }
 
-async def run(self, config, params) -> dict:
+async def run(params) -> dict:
     resolver = aiodns.DNSResolver(nameservers=NAME_SERVERS)
     types = [t.upper() for t in params.record_type]
 
