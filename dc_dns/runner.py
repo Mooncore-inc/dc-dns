@@ -2,6 +2,11 @@ import asyncio
 
 import aiodns
 
+from demon_cry_base.plugin import PluginConfig
+from demon_cry_base.runner import BaseEntity, PluginResult
+
+from dc_dns.models import DnsLookupParams
+
 NAME_SERVERS = ["1.1.1.1", "8.8.8.8", "9.9.9.9", "77.88.8.8", "208.67.220.220"]
 
 RECORD_FIELDS = {
@@ -15,7 +20,24 @@ RECORD_FIELDS = {
     "PTR": ["dname"],
 }
 
-async def run(config, params) -> dict:
+
+class DnsLookupEntity(BaseEntity):
+    qtype: str
+    value: str
+
+
+async def run(config: PluginConfig, params: DnsLookupParams) -> PluginResult:
+    if isinstance(config, dict):
+        config = PluginConfig.model_validate(config)
+    elif not isinstance(config, PluginConfig):
+        config = PluginConfig.model_validate(config.model_dump())
+
+    if isinstance(params, dict):
+        params = DnsLookupParams.model_validate(params)
+    elif not isinstance(params, DnsLookupParams):
+        params = DnsLookupParams.model_validate(params.model_dump())
+
+    _ = config
     resolver = aiodns.DNSResolver(nameservers=NAME_SERVERS)
     types = [t.upper() for t in params.record_type]
 
@@ -28,17 +50,13 @@ async def run(config, params) -> dict:
 
     results = await asyncio.gather(*(query_one(t) for t in types))
 
-    lines = []
+    entities: list[DnsLookupEntity] = []
     for qtype, records in results:
         fields = RECORD_FIELDS.get(qtype, [])
-        if records:
-            for rec in records:
-                values = [str(getattr(rec.data, f, "")) for f in fields]
-                lines.append(f"| {qtype} | {', '.join(values)} |")
-        else:
-            lines.append(f"| {qtype} | No records |")
+        if not records:
+            continue
+        for rec in records:
+            values = [str(getattr(rec.data, f, "")) for f in fields]
+            entities.append(DnsLookupEntity(qtype=qtype, value=", ".join(values)))
 
-    table = "| Type | Value |\n|---|---|\n" + "\n".join(lines)
-
-    return {"result": table}
-
+    return PluginResult(status="ok", entities=entities)

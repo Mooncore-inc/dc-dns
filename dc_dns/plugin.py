@@ -1,4 +1,4 @@
-from demon_cry_base import BasePlugin
+from demon_cry_base.plugin import BasePlugin
 from dc_dns.models import DnsLookupParams
 
 class DnsLookup(BasePlugin):

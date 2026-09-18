@@ -1,5 +1,5 @@
 from typing import Literal
-from demon_cry_base import PluginParameters
+from demon_cry_base.plugin import PluginParameters
 from pydantic import Field
 
 
