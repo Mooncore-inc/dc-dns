@@ -6,4 +6,4 @@ class DnsLookup(BasePlugin):
     description = "finds DNS records"
     category = "network"
     parameters_model = DnsLookupParams
-    execute_func = "dc_dns.plugin:DnsLookup"
+    execute_func = "dc_dns.runner:run"
