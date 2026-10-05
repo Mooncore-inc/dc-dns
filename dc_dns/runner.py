@@ -1,9 +1,10 @@
 import asyncio
+from typing import Union
 
 import dns.asyncresolver
 import dns.exception
 
-from demon_cry_base.runner import BaseEntity, PluginResult
+from demon_cry_base.runner import BaseEntity, PluginResult, ErrorEntity
 
 from dc_dns.models import DnsLookupConfig, DnsLookupParams
 
@@ -23,11 +24,11 @@ def _make_resolver(config: DnsLookupConfig) -> dns.asyncresolver.Resolver:
 
 async def _query(
     resolver: dns.asyncresolver.Resolver, domain: str, qtype: str
-) -> list[DnsLookupEntity]:
+) -> Union[list[DnsLookupEntity], list[ErrorEntity]]:
     try:
         answer = await resolver.resolve(domain, qtype)
     except dns.exception.DNSException:
-        return []
+        return [ErrorEntity(code="Error", message="something went wrong")]
     return [DnsLookupEntity(qtype=qtype, value=r.to_text()) for r in answer]
 
 
@@ -37,6 +38,4 @@ async def run(config: DnsLookupConfig, params: DnsLookupParams) -> PluginResult:
     results = await asyncio.gather(
         *(_query(resolver, domain, qtype) for qtype in params.record_type)
     )
-    return PluginResult(
-        status="ok", entities=[e for records in results for e in records]
-    )
+    return PluginResult.ok(entities=[e for records in results for e in records])
