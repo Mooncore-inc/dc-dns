@@ -1,10 +1,10 @@
 import asyncio
-from typing import Union
 
 import dns.asyncresolver
 import dns.exception
+import dns.resolver
 
-from demon_cry_base.runner import BaseEntity, PluginResult, ErrorEntity
+from demon_cry_base.runner import BaseEntity, ErrorEntity, PluginResult
 
 from dc_dns.models import DnsLookupConfig, DnsLookupParams
 
@@ -22,14 +22,47 @@ def _make_resolver(config: DnsLookupConfig) -> dns.asyncresolver.Resolver:
     return resolver
 
 
+def _error_for(domain: str, qtype: str, exc: Exception) -> ErrorEntity:
+    details = {"domain": domain, "qtype": qtype}
+    if isinstance(exc, dns.resolver.NXDOMAIN):
+        return ErrorEntity(
+            code="NXDOMAIN",
+            message=f"Domain {domain} does not exist",
+            details=details,
+        )
+    if isinstance(exc, dns.resolver.NoAnswer):
+        return ErrorEntity(
+            code="NO_ANSWER",
+            message=f"No {qtype} records for {domain}",
+            details=details,
+        )
+    if isinstance(exc, dns.exception.Timeout):
+        return ErrorEntity(
+            code="TIMEOUT",
+            message=f"DNS query timed out for {domain} ({qtype})",
+            details=details,
+        )
+    if isinstance(exc, dns.resolver.NoNameservers):
+        return ErrorEntity(
+            code="NO_NAMESERVERS",
+            message=f"No nameservers available for {domain} ({qtype})",
+            details=details,
+        )
+    return ErrorEntity(
+        code="DNS_ERROR",
+        message=str(exc) or "DNS query failed",
+        details=details,
+    )
+
+
 async def _query(
     resolver: dns.asyncresolver.Resolver, domain: str, qtype: str
-) -> Union[list[DnsLookupEntity], list[ErrorEntity]]:
+) -> tuple[list[DnsLookupEntity], ErrorEntity | None]:
     try:
         answer = await resolver.resolve(domain, qtype)
-    except dns.exception.DNSException:
-        return [ErrorEntity(code="Error", message="something went wrong")]
-    return [DnsLookupEntity(qtype=qtype, value=r.to_text()) for r in answer]
+    except dns.exception.DNSException as exc:
+        return [], _error_for(domain, qtype, exc)
+    return [DnsLookupEntity(qtype=qtype, value=r.to_text()) for r in answer], None
 
 
 async def run(config: DnsLookupConfig, params: DnsLookupParams) -> PluginResult:
@@ -38,4 +71,6 @@ async def run(config: DnsLookupConfig, params: DnsLookupParams) -> PluginResult:
     results = await asyncio.gather(
         *(_query(resolver, domain, qtype) for qtype in params.record_type)
     )
-    return PluginResult.ok(entities=[e for records in results for e in records])
+    entities = [entity for records, _ in results for entity in records]
+    errors = [error for _, error in results if error is not None]
+    return PluginResult.build(entities=entities, errors=errors)
